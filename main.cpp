@@ -1,7 +1,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <exception>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <ostream>
@@ -13,6 +13,7 @@ void removeSpc(char* &input);
 int main() {
   float result;
   std::cout << "C++ :: Calc: " << std::endl << std::endl;
+  std::cout << std::setprecision(6);
   char *line = new char[80]();
 
   while (true) {
@@ -23,9 +24,12 @@ int main() {
 
     try{
       float result = parseOperation(line);
-      if (result == std::numeric_limits<float>::quiet_NaN()) throw std::exception();
-      std::cout << line << " = " << result << std::endl;
-    } catch (...) { std::cout << "Arithmetic ERR" << std::endl; }
+      if (result != result){
+        std::cout << "Arithmetic ERR" << std::endl; 
+        continue;
+      }
+      std::cout << "\t" << line << " = " << result << std::endl;
+    } catch (...) { std::cout << "Internal ERR" << std::endl; }
   }
   return 0;
 }
@@ -34,32 +38,19 @@ float parseOperation(char* line) {
   float nums[2] = {};
   char op = '\0';
   char *iter = line;
-  // while (*iter != '\0' || *iter == '=') {
-  //   if ((*iter >= '0'  && *iter <= '9') || *iter == '.'){
-  //     ++iter;
-  //   } 
-  //   if (*iter < '0' && *iter > '9'){
-  //     if(op == '\0'){
-  //       op = *iter;
-  //     } else throw "Multi-operations are not yet allowed in this version";
-  //     char **ref = &iter;
-  //     nums[0] = std::strtof(line, ref);
-  //     nums[0] = std::strtof(, ref);
-  //     iter++;
-  //   }
-  // }
-  
+  // 10 lines of dark magic
+  if (*iter == '-') iter++;
   while ((*iter >= '0'  && *iter <= '9') || *iter == '.') 
     iter++;
-  if(op == '\0')
-    op = *iter;
-  else throw "Inline multi-operations are not yet allowed in this version";
+  op = *iter;
   nums[0] = std::strtof(line, &iter);
   line = ++iter;
+  if (*iter == '-') iter++;
   while ((*iter >= '0'  && *iter <= '9') || *iter == '.') 
     iter++;
   nums[1] = std::strtof(line, &iter);
 
+  if (op == '\0') throw "Inline multi-operators are not allowed on this version";
   if(iter != line && op=='\0') return nums[0];
 
   switch (op) {
@@ -73,8 +64,10 @@ float parseOperation(char* line) {
     return nums[0] / nums[1];
   case '%':
     return nums[0] * (nums[1]/100);
-  case 'e':
-    return nums[0] * (pow(10, nums[1]));
+  case 'e': {
+    float result =  nums[0] * ((float) pow(10, nums[1]));
+    return result;
+  }
   case 'r':
     return std::sqrt(nums[0]);
   case '^':{
@@ -97,9 +90,7 @@ void removeSpc(char* &input){
       *saver = *iter;
       iter++;
       saver++;
-    } else {
-      iter++;
-    }
+    } else iter++;
   } 
   *saver = 0;
 }
